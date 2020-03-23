@@ -53,7 +53,26 @@ router.beforeEach((to, from, next) => {
 
 
 
-import { Button, Row, Col, Layout, Menu, Breadcrumb, Icon, Affix, Table, Slider, InputNumber, Select, Card, Modal, Input, Tooltip} from 'ant-design-vue';
+import { 
+  Button,
+  Row,
+  Col,
+  Layout, 
+  Menu, 
+  Breadcrumb, 
+  Icon, 
+  Affix, 
+  Table, 
+  Slider, 
+  InputNumber, 
+  Select, 
+  Card, 
+  Modal, 
+  Input, 
+  Tooltip,
+  Popover
+} from 'ant-design-vue';
+
 Vue.use(Button);
 Vue.use(Row);
 Vue.use(Col);
@@ -70,6 +89,7 @@ Vue.use(Card);
 Vue.use(Modal);
 Vue.use(Input);
 Vue.use(Tooltip);
+Vue.use(Popover);
 
 Vue.config.productionTip = false
 

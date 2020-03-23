@@ -1,7 +1,35 @@
 <template>
   <a-layout id="components-layout-demo-top-side-2">
     <a-layout-header class="header">
-      <div class="logo" />
+      <a-row>
+        <a-col :span="3">
+          <div class="logo" />
+        </a-col>
+        <a-col :span="20">
+        </a-col>
+        <a-col :span="1">
+          <a-tooltip
+            trigger="hover"
+            :visible="hovered"
+            @visibleChange="handleHoverChange"
+          >
+            <template slot="title">
+              登出
+            </template>
+            <a-popover
+              trigger="click"
+              :visible="clicked"
+              @visibleChange="handleClickChange"
+            >
+              <div slot="content">
+                <div>确认要登出?</div>
+                <a-button type="danger" @click="logout">确认</a-button>
+              </div>
+              <a-button shape="circle" icon="poweroff" />
+            </a-popover>
+          </a-tooltip>
+        </a-col>
+      </a-row>
     </a-layout-header>
     <a-layout>
       <a-layout-sider width="200" style="background: #fff">
@@ -12,24 +40,12 @@
           :style="{ height: '100%', borderRight: 0 }"
         >
           <a-sub-menu key="sub1" @click="handleSubMenuClick">
-            <span slot="title"><a-icon type="user" />电厂卡组管理</span>
+            <span slot="title"><a-icon type="profile" />卡组管理</span>
             <a-menu-item key="cardSet">卡组</a-menu-item>
-            <!--<a-menu-item key="card">卡牌</a-menu-item>
-            <a-menu-item key="cardEdit">卡牌详情</a-menu-item>-->
           </a-sub-menu>
           <a-sub-menu key="sub2">
-            <span slot="title"><a-icon type="laptop" />subnav 2</span>
-            <a-menu-item key="5">option5</a-menu-item>
-            <a-menu-item key="6">option6</a-menu-item>
-            <a-menu-item key="7">option7</a-menu-item>
-            <a-menu-item key="8">option8</a-menu-item>
-          </a-sub-menu>
-          <a-sub-menu key="sub3">
-            <span slot="title"><a-icon type="notification" />subnav 3</span>
-            <a-menu-item key="9">option9</a-menu-item>
-            <a-menu-item key="10">option10</a-menu-item>
-            <a-menu-item key="11">option11</a-menu-item>
-            <a-menu-item key="12">option12</a-menu-item>
+            <span slot="title"><a-icon type="deployment-unit" />地图管理</span>
+            <a-menu-item key="5">地图</a-menu-item>
           </a-sub-menu>
         </a-menu>
       </a-layout-sider>
@@ -63,6 +79,8 @@
   export default {
     data() {
       return {
+        clicked: false,
+        hovered: false,
         collapsed: false,
         card_set_id: '',
         card_id: '',
@@ -75,6 +93,14 @@
       cardEdit: CardEdit
     },
     methods:{
+      handleHoverChange(visible) {
+        this.clicked = false;
+        this.hovered = visible;
+      },
+      handleClickChange(visible) {
+        this.clicked = visible;
+        this.hovered = false;
+      },
       handleSubMenuClick({key}){
         EventBus.$emit('modeChange', key);
       },
@@ -92,6 +118,12 @@
         if(this.mode != 'cardEdit'){
         EventBus.$emit('modeChange', 'cardEdit');
         }
+      },
+      logout(){
+        this.$store.commit('saveUserInfo', "");
+        this.$router.push({
+          path: '/login'
+        });
       }
     },
     mounted(){
