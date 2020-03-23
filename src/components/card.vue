@@ -1,5 +1,14 @@
 <template>
   <div>
+    <a-row type="flex" justify="end" style="margin-bottom:10px;">
+      <a-col :span="8">
+      </a-col>
+      <a-col :span="4">
+      </a-col>
+      <a-col :span="4">
+        <a-button type="primary" shape="round" @click="toAddCard"><a-icon type="folder-add"/>添加卡牌</a-button>
+      </a-col>
+    </a-row>
     <a-table 
       :columns="columns" 
       :dataSource="data" 
@@ -7,24 +16,22 @@
       :pagination="pagination"
       :loading="loading"
       @change="handleTableChange"
-      v-if="mode == 'card'"
+      v-if="setId"
     >
       <a slot="name" slot-scope="text">{{text}}</a>
       <span slot="action" slot-scope="text, record">
-        <a-button type="primary" shape="circle" icon="edit" style='margin: 5px' @click="handleEdit(record._id)"></a-button>
+        <a-tooltip>
+          <template slot="title">
+          编辑卡牌
+          </template>
+          <a-button type="primary" shape="circle" icon="edit" style='margin: 5px' @click="handleEdit(record._id)"></a-button>
+        </a-tooltip>
       </span>
     </a-table>
-    <cardEdit v-if="mode == 'cardEdit'" :mode="mode" :cardId="current_card_id"></cardEdit>
   </div>
 </template>
 <script>
-  import CardEdit from './cardEdit';
-  import axios from 'axios';
-
-  const instance = axios.create({
-    baseURL: 'http://localhost:12133/api/card'
-  });
-  instance.defaults.headers.common['b-json-web-token'] = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VyX2lkIjoiNWU3MmU2MGVhNjMwNGYyOTUwYzc5MDUxIiwiaWF0IjoxNTg0NTg4MzIzLCJleHAiOjE1ODQ2NzQ3MjN9.86t3LxUDqr-qkWRP76jCR3nzw87vJgrg8QggGAmPVfk';
+  import { EventBus } from '../lib/event-bus.js'; //全局事件总线
 
   const columns = [
     {
@@ -61,13 +68,11 @@
         pagination: {},
         loading: false,
         columns,
-        current_card_id: ''
+        current_card_id: '',
+        mode: 'card'
       };
     },
-    components:{
-      cardEdit: CardEdit
-    },
-    props: ['setId', 'mode'],
+    props: ['setId'],
     methods:{
       handleTableChange(pagination, filters, sorter) {
         const pager = { ...this.pagination };
@@ -84,9 +89,9 @@
       fetch(params = {}) {
         console.log('params:', params);
         this.loading = true;
-        instance
+        this.instance
         .get(
-          '/listCards',
+          '/card/listCards',
           {params}
         )
         .then(response => {
@@ -102,13 +107,22 @@
           console.log(error);
         });
       },
+      toAddCard(){
+        EventBus.$emit('modeChange', 'cardEdit');
+      },
       handleEdit(value){
         console.log(value);
-        this.current_card_id = value;
-        this.mode = 'cardEdit';
+        EventBus.$emit('selectCard', value);
+        EventBus.$emit('modeChange', 'cardEdit');
       }
     },
     mounted(){
+      //注册事件监听
+      EventBus.$on('modeChange', mode => {
+        this.mode = mode;
+        console.log(`card receive: ${mode}`);
+      });
+      EventBus.$emit('selectCard', "");
       console.log(`set-id: ${this.setId}`);
       this.fetch({
         page:1,

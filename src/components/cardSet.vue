@@ -1,30 +1,40 @@
 <template>
   <div>
-  <a-table 
-    :columns="columns" 
-    :dataSource="data"
-    :rowKey="item => item._id"
-    :pagination="pagination"
-    :loading="loading"
-    @change="handleTableChange"
-    v-if="mode == 'cardSet'"
-  >
-    <a slot="name" slot-scope="text">{{text}}</a>
-    <span slot="action" slot-scope="text, record">
-      <a-button type="primary" shape="circle" icon="edit" style='margin: 5px' @click="handleEdit(record._id)"></a-button>
-    </span>
-  </a-table>
-  <card :setId="current_set_id" :mode="mode" v-if="mode == 'card'"></card>
+    <a-row type="flex" justify="end" style="margin-bottom:10px;">
+      <a-col :span="8">
+      </a-col>
+      <a-col :span="4">
+      </a-col>
+      <a-col :span="4">
+        <a-button type="primary" shape="round" @click="showModal"><a-icon type="folder-add"/>添加卡组</a-button>
+      </a-col>
+    </a-row>
+    <a-modal title="Modal" v-model="addSetVisible" @ok="hideModal" okText="添加" cancelText="取消">
+      <a-input placeholder="卡组名称" v-model="nameInput"></a-input>
+      <a-textarea placeholder="添加卡组描述" :rows="4" style="margin-top:20px" v-model="descriptionInput"/>
+    </a-modal>
+    <a-table 
+      :columns="columns" 
+      :dataSource="data"
+      :rowKey="item => item._id"
+      :pagination="pagination"
+      :loading="loading"
+      @change="handleTableChange"
+    >
+      <a slot="name" slot-scope="text">{{text}}</a>
+      <span slot="action" slot-scope="text, record">
+        <a-tooltip>
+          <template slot="title">
+            编辑卡组
+          </template>
+          <a-button type="primary" shape="circle" icon="edit" style='margin: 5px' @click="handleEdit(record._id)"></a-button>
+        </a-tooltip>
+      </span>
+    </a-table>
   </div>
 </template>
 <script>
-  import Card from './card';
-  import axios from 'axios';
-
-  const instance = axios.create({
-    baseURL: 'http://localhost:12133/api/card'
-  });
-  instance.defaults.headers.common['b-json-web-token'] = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VyX2lkIjoiNWU3MmU2MGVhNjMwNGYyOTUwYzc5MDUxIiwiaWF0IjoxNTg0NTg4MzIzLCJleHAiOjE1ODQ2NzQ3MjN9.86t3LxUDqr-qkWRP76jCR3nzw87vJgrg8QggGAmPVfk';
+  import { EventBus } from '../lib/event-bus.js'; //全局事件总线
 
   const columns = [
     {
@@ -56,12 +66,11 @@
         pagination: {},
         loading: false,
         columns,
-        current_set_id: ''
+        mode: 'cardSet',
+        addSetVisible: false,
+        nameInput: "",
+        descriptionInput: ""
       };
-    },
-    props: ['mode'],
-    components:{
-      card: Card
     },
     methods:{
       handleTableChange(pagination, filters, sorter) {
@@ -79,9 +88,9 @@
       fetch(params = {}) {
         console.log('params:', params);
         this.loading = true;
-        instance
+        this.instance
         .get(
-          '/listCardSets',
+          '/card/listCardSets',
           {params}
         )
         .then(response => {
@@ -99,11 +108,43 @@
       },
       handleEdit(value){
         console.log(value);
-        this.current_set_id = value;
-        this.mode = 'card';
+        EventBus.$emit('selectCardSet', value);
+        EventBus.$emit('modeChange', 'card');
       },
+      showModal(){
+        this.addSetVisible = true;
+      },
+      hideModal(){
+        this.addSetVisible = false;
+        this.addSetAndRefetch();
+      },
+      addSetAndRefetch(){
+        let that = this;
+        let data = {
+          name: this.nameInput,
+          description: this.descriptionInput
+        };
+        this.instance
+        .post(
+          '/card/addCardSet',
+          data
+        )
+        .then(response => {
+          console.log(response);
+          that.fetch();
+        })
+        .catch(function (error) { // 请求失败处理
+          console.log(error);
+        });
+      }
     },
     mounted(){
+      //注册事件监听
+      EventBus.$on('modeChange', mode => {
+        this.mode = mode;
+        console.log(`cardSet receive: ${mode}`);
+      });
+      EventBus.$emit('selectCardSet', "");
       this.fetch({
         page:1,
         pageSize:10

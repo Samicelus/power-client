@@ -2,16 +2,6 @@
   <a-layout id="components-layout-demo-top-side-2">
     <a-layout-header class="header">
       <div class="logo" />
-      <a-menu
-        theme="dark"
-        mode="horizontal"
-        :defaultSelectedKeys="['2']"
-        :style="{ lineHeight: '64px' }"
-      >
-        <a-menu-item key="1">nav 1</a-menu-item>
-        <a-menu-item key="2">nav 2</a-menu-item>
-        <a-menu-item key="3">nav 3</a-menu-item>
-      </a-menu>
     </a-layout-header>
     <a-layout>
       <a-layout-sider width="200" style="background: #fff">
@@ -24,9 +14,8 @@
           <a-sub-menu key="sub1" @click="handleSubMenuClick">
             <span slot="title"><a-icon type="user" />电厂卡组管理</span>
             <a-menu-item key="cardSet">卡组</a-menu-item>
-            <a-menu-item key="card">卡牌</a-menu-item>
-            <a-menu-item key="3">option3</a-menu-item>
-            <a-menu-item key="4">option4</a-menu-item>
+            <!--<a-menu-item key="card">卡牌</a-menu-item>
+            <a-menu-item key="cardEdit">卡牌详情</a-menu-item>-->
           </a-sub-menu>
           <a-sub-menu key="sub2">
             <span slot="title"><a-icon type="laptop" />subnav 2</span>
@@ -46,14 +35,16 @@
       </a-layout-sider>
       <a-layout style="padding: 0 24px 24px">
         <a-breadcrumb style="margin: 16px 0;text-align: left">
-          <a-breadcrumb-item>Home</a-breadcrumb-item>
-          <a-breadcrumb-item>List</a-breadcrumb-item>
-          <a-breadcrumb-item>App</a-breadcrumb-item>
+          <a-breadcrumb-item v-show="['cardSet','card','cardEdit'].includes(mode)"><span @click="toCardSet">卡组列表</span></a-breadcrumb-item>
+          <a-breadcrumb-item v-show="['card','cardEdit'].includes(mode)"><span @click="toCard">卡牌列表</span></a-breadcrumb-item>
+          <a-breadcrumb-item v-show="['cardEdit'].includes(mode)"><span @click="toCardEdit">卡牌详情</span></a-breadcrumb-item>
         </a-breadcrumb>
         <a-layout-content
           :style="{ background: '#fff', padding: '24px', margin: 0, minHeight: '1080px' }"
         >
-        <cardSet :mode="mode"></cardSet>
+        <cardSet v-if="mode == 'cardSet'"></cardSet>
+        <card :setId="card_set_id" v-if="mode == 'card'"></card>
+        <cardEdit :cardId="card_id" :setId="card_set_id" v-if="mode == 'cardEdit'"></cardEdit>
         </a-layout-content>
       </a-layout>
     </a-layout>
@@ -61,23 +52,59 @@
 </template>
 
 <script>
+  import { EventBus } from '../lib/event-bus.js'; //全局事件总线
+
   import CardSet from './cardSet'
+  import Card from './card'
+  import CardEdit from './cardEdit'
+
   let mode = 'cardSet';
 
   export default {
     data() {
       return {
         collapsed: false,
+        card_set_id: '',
+        card_id: '',
         mode
       };
     },
     components:{
-      cardSet: CardSet
+      cardSet: CardSet,
+      card: Card,
+      cardEdit: CardEdit
     },
     methods:{
       handleSubMenuClick({key}){
-        this.mode = key
+        EventBus.$emit('modeChange', key);
+      },
+      toCardSet(){
+        if(this.mode != 'cardSet'){
+          EventBus.$emit('modeChange', 'cardSet');
+        }
+      },
+      toCard(){
+        if(this.mode != 'card'){
+          EventBus.$emit('modeChange', 'card');
+        }
+      },
+      toCardEdit(){
+        if(this.mode != 'cardEdit'){
+        EventBus.$emit('modeChange', 'cardEdit');
+        }
       }
+    },
+    mounted(){
+      //注册事件监听
+      EventBus.$on('modeChange', mode => {
+        this.mode = mode;
+      });
+      EventBus.$on('selectCardSet', set_id => {
+        this.card_set_id = set_id;
+      });
+      EventBus.$on('selectCard', card_id => {
+        this.card_id = card_id;
+      });
     }
   };
 </script>

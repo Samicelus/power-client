@@ -9,27 +9,39 @@
             slot="cover"
             style="z-index:1"
           />
-          <img
-            alt=""
-            :src="currentResource"
-            slot="cover"
-            style="z-index:2;position:relative;top:-50px;left:10px;height:48px;width:48px;"
-            v-show="card.consume>0"
-          />
-          <img
-            alt=""
-            :src="currentResource"
-            slot="cover"
-            style="z-index:3;position:relative;top:-98px;left:26px;height:48px;width:48px;"
-            v-show="card.consume>1"
-          />
-          <img
-            alt=""
-            :src="currentResource"
-            slot="cover"
-            style="z-index:4;position:relative;top:-146px;left:42px;height:48px;width:48px;"
-            v-show="card.consume>2"
-          />
+          <p style="z-index:2;position:relative;top:-268px;left:-82px;color:white;font-size:48px;font-weight:bolder;">{{card.order}}</p>
+          <div style="z-index:3;position:relative;top:-197px;left:-60px;">
+            <img
+              alt=""
+              :src="currentResource"
+              slot="cover"
+              style="height:48px;width:48px;margin-left:-32px;"
+              v-show="card.consume>0"
+            />
+            <img
+              alt=""
+              :src="currentResource"
+              slot="cover"
+              style="height:48px;width:48px;margin-left:-32px;"
+              v-show="card.consume>1"
+            />
+            <img
+              alt=""
+              :src="currentResource"
+              slot="cover"
+              style="height:48px;width:48px;margin-left:-32px;"
+              v-show="card.consume>2"
+            />
+          </div>
+          <div style="z-index:3;position:relative;top:-243px;left:50px;font-size:28px;">
+            <a-icon type="thunderbolt" theme="twoTone" twoToneColor="#888888" style="margin-left:-20px;"/>
+            <a-icon v-show="card.produce>1" type="thunderbolt" theme="twoTone" twoToneColor="#888888" style="margin-left:-20px;"/>
+            <a-icon v-show="card.produce>2" type="thunderbolt" theme="twoTone" twoToneColor="#888888" style="margin-left:-20px;"/>
+            <a-icon v-show="card.produce>3" type="thunderbolt" theme="twoTone" twoToneColor="#888888" style="margin-left:-20px;"/>
+            <a-icon v-show="card.produce>4" type="thunderbolt" theme="twoTone" twoToneColor="#888888" style="margin-left:-20px;"/>
+            <a-icon v-show="card.produce>5" type="thunderbolt" theme="twoTone" twoToneColor="#888888" style="margin-left:-20px;"/>
+            <a-icon v-show="card.produce>6" type="thunderbolt" theme="twoTone" twoToneColor="#888888" style="margin-left:-20px;"/>
+          </div>
         </a-card>
       </a-col>
       <a-col :span="8">
@@ -48,7 +60,7 @@
             <a-slider :min="minConsume" :max="3" v-model="card.consume" :disabled="fixConsume"/>
           </a-col>
           <a-col :span="4">
-            <a-select defaultValue="coal" @change="handleChange" style="margin-left: 16px">
+            <a-select :value="card.plantType" @change="handleChange" style="margin-left: 16px">
               <a-select-option value="coal">煤炭</a-select-option>
               <a-select-option value="oil">石油</a-select-option>
               <a-select-option value="hybrid">混合能源</a-select-option>
@@ -68,16 +80,19 @@
           </a-col>
         </a-row>
       </a-col>
+    </a-row>  
+    <a-row>
+      <a-col :span="8">
+      </a-col>
+      <a-col :span="8">
+        <a-button type="primary" :disabled="!!cardId" style="margin:20px" @click="createCard">添加</a-button>
+        <a-button type="primary" :disabled="!cardId" style="margin:20px" @click="modifyCard">修改</a-button>
+      </a-col>
     </a-row>
   </div>
 </template>
 <script>
-  import axios from 'axios';
-
-  const instance = axios.create({
-    baseURL: 'http://localhost:12133/api/card'
-  });
-  instance.defaults.headers.common['b-json-web-token'] = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VyX2lkIjoiNWU3MmU2MGVhNjMwNGYyOTUwYzc5MDUxIiwiaWF0IjoxNTg0NTg4MzIzLCJleHAiOjE1ODQ2NzQ3MjN9.86t3LxUDqr-qkWRP76jCR3nzw87vJgrg8QggGAmPVfk';
+  import { EventBus } from '../lib/event-bus.js'; //全局事件总线
 
   export default {
     data() {
@@ -85,6 +100,7 @@
         card: {},
         fixConsume: false,
         minConsume: 1,
+        mode: 'card',
         plantImages:{
           coal: require('../../static/images/card/coal_plant.png'),
           oil: require('../../static/images/card/oil_plant.png')
@@ -111,17 +127,14 @@
         }
       }
     },
-    props: ['cardId'],
+    props: ['cardId', 'setId'],
     methods:{
-      handleCardChange() {
-
-      },
       fetch(params = {}) {
         console.log('params:', params);
         this.loading = true;
-        instance
+        this.instance
         .get(
-          '/getCardDetail',
+          '/card/getCardDetail',
           {params}
         )
         .then(response => {
@@ -145,13 +158,73 @@
           this.fixConsume = false;
         }
         this.card.plantType = value;
+      },
+      createCard(){
+        let data = {
+          set_id: this.setId,
+          order: this.card.order,
+          plantType: this.card.plantType,
+          consume: this.card.consume,
+          produce: this.card.produce
+        };
+        this.instance
+        .post(
+          '/card/addCard',
+          data
+        )
+        .then(response => {
+          console.log(response);
+          this.card = response.data.data;
+          EventBus.$emit('selectCard', "");
+          EventBus.$emit('modeChange', 'card');
+        })
+        .catch(function (error) { // 请求失败处理
+          console.log(error);
+        });
+      },
+      modifyCard(){
+        let data = {
+          card_id: this.cardId,
+          order: this.card.order,
+          plantType: this.card.plantType,
+          consume: this.card.consume,
+          produce: this.card.produce
+        };
+        this.instance
+        .post(
+          '/card/editCard',
+          data
+        )
+        .then(response => {
+          console.log(response);
+          this.card = response.data.data;
+          EventBus.$emit('selectCard', "");
+          EventBus.$emit('modeChange', 'card');
+        })
+        .catch(function (error) { // 请求失败处理
+          console.log(error);
+        });
       }
     },
     mounted(){
-      console.log(`card_id: ${this.cardId}`);
-      this.fetch({
-        card_id: this.cardId
-      })
+      //注册事件监听
+      EventBus.$on('modeChange', mode => {
+        this.mode = mode;
+        console.log(`cardEdit receive: ${mode}`);
+      });
+      if(this.cardId){
+        console.log(`card_id: ${this.cardId}`);
+        this.fetch({
+          card_id: this.cardId
+        })
+      }else{
+        this.card = {
+          order: 1,
+          plantType: 'coal',
+          consume: 3,
+          produce: 1
+        }
+      }
     }
   };
 </script>
