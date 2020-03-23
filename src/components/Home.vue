@@ -8,26 +8,12 @@
         <a-col :span="20">
         </a-col>
         <a-col :span="1">
-          <a-tooltip
-            trigger="hover"
-            :visible="hovered"
-            @visibleChange="handleHoverChange"
+          <a-popconfirm
+            title="确认要登出?"
+            @confirm="logout"
           >
-            <template slot="title">
-              登出
-            </template>
-            <a-popover
-              trigger="click"
-              :visible="clicked"
-              @visibleChange="handleClickChange"
-            >
-              <div slot="content">
-                <div>确认要登出?</div>
-                <a-button type="danger" @click="logout">确认</a-button>
-              </div>
-              <a-button shape="circle" icon="poweroff" />
-            </a-popover>
-          </a-tooltip>
+            <a-button shape="circle" icon="poweroff" />
+          </a-popconfirm>
         </a-col>
       </a-row>
     </a-layout-header>
@@ -79,8 +65,6 @@
   export default {
     data() {
       return {
-        clicked: false,
-        hovered: false,
         collapsed: false,
         card_set_id: '',
         card_id: '',
@@ -93,14 +77,6 @@
       cardEdit: CardEdit
     },
     methods:{
-      handleHoverChange(visible) {
-        this.clicked = false;
-        this.hovered = visible;
-      },
-      handleClickChange(visible) {
-        this.clicked = visible;
-        this.hovered = false;
-      },
       handleSubMenuClick({key}){
         EventBus.$emit('modeChange', key);
       },

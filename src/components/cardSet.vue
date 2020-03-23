@@ -46,6 +46,7 @@
       title: '卡牌数',
       dataIndex: 'count',
       key: 'count',
+      sorter: true
     },
     {
       title: '简介',

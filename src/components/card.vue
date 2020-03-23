@@ -26,6 +26,17 @@
           </template>
           <a-button type="primary" shape="circle" icon="edit" style='margin: 5px' @click="handleEdit(record._id)"></a-button>
         </a-tooltip>
+        <a-tooltip>
+          <template slot="title">
+          删除卡牌
+          </template>
+          <a-popconfirm
+            title="确认要删除?"
+            @confirm="handleRemove(record._id)"
+          >
+            <a-button type="primary" shape="circle" icon="delete" style='margin: 5px'></a-button>
+          </a-popconfirm>
+        </a-tooltip>
       </span>
     </a-table>
   </div>
@@ -37,22 +48,33 @@
     {
       title: '序号',
       dataIndex: 'order',
-      key: 'order'
+      key: 'order',
+      sorter: true
     },
     {
       title: '类型',
       dataIndex: 'plantType',
       key: 'plantType',
+      filters: [
+        { text: '煤炭', value: 'coal' }, 
+        { text: '石油', value: 'oil' }, 
+        { text: '混合能源', value: 'hybrid' }, 
+        { text: '垃圾', value: 'garbage' }, 
+        { text: '核能', value: 'nuclear' }, 
+        { text: '清洁能源', value: 'clean energy' }
+      ]
     },
     {
       title: '消耗',
       dataIndex: 'consume',
       key: 'consume',
+      sorter: true
     },
     {
       title: '产能',
       dataIndex: 'produce',
       key: 'produce',
+      sorter: true
     },
     {
       title: '操作',
@@ -78,13 +100,19 @@
         const pager = { ...this.pagination };
         pager.current = pagination.current;
         this.pagination = pager;
-        this.fetch({
-          pageSize: pagination.pageSize,
-          page: pagination.current,
-          sortField: sorter.field,
-          sortOrder: sorter.order,
-          ...filters,
-        });
+        let fetchPayload = {
+          set_id: this.setId,
+          ...filters
+        };
+        if(pagination){
+          fetchPayload.pageSize = pagination.pageSize;
+          fetchPayload.page = pagination.current;
+        }
+        if(sorter){
+          fetchPayload.sortField = sorter.field;
+          fetchPayload.sortOrder = sorter.order;
+        }
+        this.fetch(fetchPayload);
       },
       fetch(params = {}) {
         console.log('params:', params);
@@ -111,9 +139,31 @@
         EventBus.$emit('modeChange', 'cardEdit');
       },
       handleEdit(value){
-        console.log(value);
         EventBus.$emit('selectCard', value);
         EventBus.$emit('modeChange', 'cardEdit');
+      },
+      handleRemove(value){
+        console.log(value);
+        let that = this;
+        this.instance
+        .delete(
+          '/card/'+value+'/delete'
+        )
+        .then(() => {
+          console.log({
+            pagination: that.pagination,
+            filters: that.filters, 
+            sorter: that.sorter
+          });
+          that.handleTableChange({
+            pagination: that.pagination,
+            filters: that.filters, 
+            sorter: that.sorter
+          });
+        })
+        .catch(function (error) { // 请求失败处理
+          console.log(error);
+        });
       }
     },
     mounted(){

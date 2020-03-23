@@ -70,7 +70,8 @@ import {
   Modal, 
   Input, 
   Tooltip,
-  Popover
+  Popover,
+  Popconfirm
 } from 'ant-design-vue';
 
 Vue.use(Button);
@@ -90,6 +91,7 @@ Vue.use(Modal);
 Vue.use(Input);
 Vue.use(Tooltip);
 Vue.use(Popover);
+Vue.use(Popconfirm);
 
 Vue.config.productionTip = false
 
